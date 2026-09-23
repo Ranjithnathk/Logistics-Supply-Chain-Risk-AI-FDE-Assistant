@@ -174,6 +174,7 @@ cached_filenames = set(hash_cache.keys())
 current_filenames = set(current_files.keys())
 deleted_files = cached_filenames - current_filenames
 
+# if files deleted
 for deleted_file in deleted_files:
     print(f"🗑️ Detected deleted file: {deleted_file}. Purging from Pinecone...")
     try:
@@ -182,6 +183,7 @@ for deleted_file in deleted_files:
     except Exception as e:
         print(f"  ❌ Failed to purge {deleted_file}: {e}")
 
+# if files are modified
 for file_name, file_path in current_files.items():
     file_bytes = file_path.read_bytes()
     file_hash = hashlib.md5(file_bytes).hexdigest()
