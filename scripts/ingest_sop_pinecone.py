@@ -46,7 +46,7 @@ if HASH_CACHE_FILE.exists():
 EMBEDDINGS_MODEL_SETTING = os.getenv("Embeddings_model", "LOCAL").strip().upper()
 
 if EMBEDDINGS_MODEL_SETTING == "OPENAI":
-    print("🤖 Mode: Utilizing Cloud OpenAI Embeddings (1536 Dim)...")
+    print("Mode: Utilizing Cloud OpenAI Embeddings (1536 Dim)...")
     embeddings = OpenAIEmbeddings()
     INDEX_NAME = "fde-sop-index-openai"  # Isolated OpenAI Index
     TARGET_DIMENSION = 1536
@@ -54,7 +54,7 @@ else:
     # Read the explicit model identifier casing string from the .env parameters
     local_model_target = os.getenv("Local_Embedding_Model", "BAAI/bge-m3").strip()
     
-    print(f"🤗 Mode: Local Fallback Settings Activated. Launching [{local_model_target}] (1024 Dim)...")
+    print(f"Mode: Local Fallback Settings Activated. Launching [{local_model_target}] (1024 Dim)...")
     from langchain_huggingface import HuggingFaceEmbeddings
     embeddings = HuggingFaceEmbeddings(
         model_name=local_model_target,   # Passes parameter dynamically
@@ -75,7 +75,7 @@ existing_indexes = pc.list_indexes().names()
 if INDEX_NAME in existing_indexes:
     desc = pc.describe_index(INDEX_NAME)
     if desc.dimension != TARGET_DIMENSION:
-        print(f"⚠️ Fixing tracking: Purging mismatched {desc.dimension} dim index...")
+        print(f"Fixing tracking: Purging mismatched {desc.dimension} dim index...")
         pc.delete_index(INDEX_NAME)
         existing_indexes = [name for name in existing_indexes if name != INDEX_NAME]
 
@@ -122,14 +122,14 @@ def parse_and_chunk_document(doc_path: Path) -> list[Document]:
                         pdf_docs.append(Document(page_content=page_text, metadata={"page_number": page_num + 1}))
             raw_chunks = text_splitter.split_documents(pdf_docs)
         except Exception as e:
-            print(f"  ❌ Error parsing PDF {doc_path.name}: {e}")
+            print(f"Error parsing PDF {doc_path.name}: {e}")
             return []
         
     elif ext in [".csv", ".xlsx"]:
         try:
             df = pd.read_csv(doc_path) if ext == ".csv" else pd.read_excel(doc_path)
         except Exception as e:
-            print(f"  ❌ Error reading table: {e}")
+            print(f"Error reading table: {e}")
             return []
             
         for idx, row in df.iterrows():
@@ -176,12 +176,12 @@ deleted_files = cached_filenames - current_filenames
 
 # if files deleted
 for deleted_file in deleted_files:
-    print(f"🗑️ Detected deleted file: {deleted_file}. Purging from Pinecone...")
+    print(f"Detected deleted file: {deleted_file}. Purging from Pinecone...")
     try:
         index_client.delete(filter={"source_file": {"$eq": deleted_file}})
         cache_modified = True
     except Exception as e:
-        print(f"  ❌ Failed to purge {deleted_file}: {e}")
+        print(f"Failed to purge {deleted_file}: {e}")
 
 # if files are modified
 for file_name, file_path in current_files.items():
@@ -190,10 +190,10 @@ for file_name, file_path in current_files.items():
     updated_cache[file_name] = file_hash
     
     if hash_cache.get(file_name) == file_hash:
-        print(f"✨ Skipped (Unchanged): {file_name}")
+        print(f"Skipped (Unchanged): {file_name}")
         continue
         
-    print(f"🔄 Processing updates: {file_name}...")
+    print(f"Processing updates: {file_name}...")
     cache_modified = True
     
     try:
@@ -204,7 +204,7 @@ for file_name, file_path in current_files.items():
         
         chunks = parse_and_chunk_document(file_path)
         if not chunks:
-            print(f"  ⚠️ No valid text chunks extracted from {file_name}.")
+            print(f"No valid text chunks extracted from {file_name}.")
             continue
             
         explicit_ids = []
@@ -216,7 +216,7 @@ for file_name, file_path in current_files.items():
             
         batch_size = 100
         total_chunks = len(chunks)
-        print(f"  📤 Upserting {total_chunks} chunk(s) in batches of {batch_size}...")
+        print(f"Upserting {total_chunks} chunk(s) in batches of {batch_size}...")
         
         for i in range(0, total_chunks, batch_size):
             batch_docs = chunks[i : i + batch_size]
@@ -224,7 +224,7 @@ for file_name, file_path in current_files.items():
             vector_store.add_documents(documents=batch_docs, ids=batch_ids)
             
     except Exception as e:
-        print(f"❌ Error during ingestion of {file_name}: {e}")
+        print(f"Error during ingestion of {file_name}: {e}")
         updated_cache.pop(file_name, None)
 
 # ==========================================
@@ -233,6 +233,6 @@ for file_name, file_path in current_files.items():
 if cache_modified:
     with open(HASH_CACHE_FILE, "w") as f:
         json.dump(updated_cache, f, indent=4)
-    print("✅ Ingestion & cache update complete.")
+    print("Ingestion & cache update complete.")
 else:
-    print("🌴 Index is already up-to-date.")
+    print("Index is already up-to-date.")

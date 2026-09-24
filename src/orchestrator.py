@@ -33,12 +33,22 @@ class AgentState(TypedDict):
 AGENT_LLM_SETTING = os.getenv("Agent_llm", "OLLAMA").strip().upper()
 
 if AGENT_LLM_SETTING == "OPENAI":
-    print("🤖 Brain Mode: Utilizing Cloud OpenAI Reasoner (gpt-4o)...")
+    print("Brain Mode: Utilizing Cloud OpenAI Reasoner (gpt-4o)...")
     from langchain_openai import ChatOpenAI
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
+elif AGENT_LLM_SETTING == "GEMINI":
+    print("Brain Mode: Utilizing Cloud Google Gemini Reasoner (gemini-3.6-flash)...")
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-3.6-flash",
+        temperature=0,
+        google_api_key=os.getenv("GEMINI_API_KEY"),
+        max_output_tokens=2048,
+    )
+
 elif AGENT_LLM_SETTING == "DEEPSEEK":
-    print("🐳 Brain Mode: Utilizing Flagship DeepSeek Cloud Reasoner (deepseek-v4-pro)...")
+    print("Brain Mode: Utilizing Flagship DeepSeek Cloud Reasoner...")
     from langchain_openai import ChatOpenAI
     
     # Fully updated to match 2026 DeepSeek API parameters and endpoint contracts
@@ -55,7 +65,7 @@ elif AGENT_LLM_SETTING == "DEEPSEEK":
     )
 
 else:  # FALLBACK / DEFAULT RUNNER MODE
-    print("🤗 Brain Mode: Local Fallback Activated. Binding Local Ollama (qwen2.5:7b)...")
+    print("Brain Mode: Local Fallback Activated. Binding Local Ollama (qwen2.5:7b)...")
     from langchain_ollama import ChatOllama
     llm = ChatOllama(model="qwen2.5:7b", temperature=0, num_predict=1024)
 
@@ -85,7 +95,7 @@ fde_agent = graph_builder.compile(checkpointer=MemorySaver())
 # ==========================================
 if __name__ == "__main__":
     print("\n" + "="*55)
-    print("🚀 FDE Supply Chain Orchestrator State Machine Online")
+    print("FDE Supply Chain Orchestrator State Machine Online")
     print(f"   Configured Execution: [LLM: {AGENT_LLM_SETTING}] -> [Embeddings: {os.getenv('Embeddings_model', 'LOCAL')}]")
     print("="*55 + "\n")
     
@@ -101,7 +111,10 @@ if __name__ == "__main__":
     system_prompt = SystemMessage(content=system_instructions)
     
     thread_config = {"configurable": {"thread_id": "production_test_1"}}
-    fde_agent.invoke({"messages": [system_prompt]}, config=thread_config)
+    # NOTE: Gemini's API requires at least one non-system message in the payload,
+    # so the priming call pairs the system prompt with a minimal starter message.
+    # This is harmless no-op context for OpenAI/DeepSeek/Ollama too.
+    fde_agent.invoke({"messages": [system_prompt, ("user", "Session initialized.")]}, config=thread_config)
     
     while True:
         user_input = input("\nDispatcher > ")
@@ -112,7 +125,7 @@ if __name__ == "__main__":
         for event in events:
             for node_name, node_state in event.items():
                 if node_name == "tools":
-                    print("   [System] 🔄 Retrieving external data elements via ToolNode...")
+                    print("   [System] Retrieving external data elements via ToolNode...")
                 elif node_name == "reasoner":
                     latest_msg = node_state["messages"][-1]
                     if latest_msg.content:

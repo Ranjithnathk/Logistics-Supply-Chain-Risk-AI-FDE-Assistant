@@ -22,3 +22,4 @@ SQLAlchemy==2.0.52
 streamlit==1.62.0
 torch==2.13.0
 langchain-ollama
+langchain-google-genai

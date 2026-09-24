@@ -30,7 +30,7 @@ def get_cached_huggingface_embeddings(model_name: str):
     # We wrap the inner call with st.cache_resource dynamically 
     @st.cache_resource(show_spinner=False)
     def _load_model(name: str):
-        print(f"🧠 MEMORY SEED: Permanently caching local model [{name}] in global RAM...")
+        print(f"MEMORY SEED: Permanently caching local model [{name}] in global RAM...")
         from langchain_huggingface import HuggingFaceEmbeddings
         return HuggingFaceEmbeddings(
             model_name=name,
@@ -49,13 +49,13 @@ if not PINECONE_API_KEY:
     raise ValueError("CRITICAL: Ensure PINECONE_API_KEY is present in your active .env profile.")
 
 if EMBEDDINGS_MODEL_SETTING == "OPENAI":
-    print("🤖 Mode: Connecting to Cloud OpenAI Index (1536 Dim Space)...")
+    print("Mode: Connecting to Cloud OpenAI Index (1536 Dim Space)...")
     embeddings = OpenAIEmbeddings()
     INDEX_NAME = "fde-sop-index-openai"
 else :
     local_model_target = os.getenv("Local_Embedding_Model", "BAAI/bge-m3").strip()
     
-    print(f"🤗 Mode: Connecting to Local Fallback [{local_model_target}] Index (1024 Dim Space)...")
+    print(f"Mode: Connecting to Local Fallback [{local_model_target}] Index (1024 Dim Space)...")
 
     try:
         import streamlit as st
